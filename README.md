@@ -11,8 +11,8 @@ Production-grade AWS data lake platform with automated ETL pipeline, Lambda-base
 
 EventBridge (Cron) ──────────────────┐
                                      ↓
-                          ┌──────────────────────┐
-MySQL RDS ←─ Extract ←──│  ECS Fargate Task    │
+                         ┌──────────────────────┐
+MySQL RDS ←─ Extract ←── │  ECS Fargate Task    │
       ↑                  │  (Docker Container)  │
       │                  │  - Extract           │
 Secrets Manager          │  - Transform         │
@@ -50,7 +50,7 @@ EventBridge (Cron)                      Streamlit Dashboard (ECS Service)
 ┌─────────────────┐                        ┌─────────────────┐
 │ Step Functions  │                        │     Athena      │
 └────────┬────────┘                        │   (SQL Query)   │
-         ↓                                  └────────┬────────┘
+         ↓                                 └────────┬────────┘
 ┌─────────────────┐                                 ↓
 │     Lambda      │                         ┌─────────────────┐
 │ (Read S3 Data)  │◄────────────────────────│  Glue Catalog   │

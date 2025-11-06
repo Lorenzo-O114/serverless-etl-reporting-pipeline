@@ -5,11 +5,68 @@ Production-grade AWS data lake platform with automated ETL pipeline, Lambda-base
 ## Architecture
 
 ```
-MySQL RDS → Extract (ECS Fargate) → Transform → Partition (Parquet) → S3 Data Lake
-                                                                          ↓
-                                              Lambda Report ← Athena → Streamlit Dashboard
-                                                   ↓
-                                              Email (SES)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          ETL PIPELINE (Every 3 Hours)                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+EventBridge (Cron) ──────────────────┐
+                                     ↓
+                          ┌──────────────────────┐
+MySQL RDS ←─ Extract ←──│  ECS Fargate Task    │
+      ↑                  │  (Docker Container)  │
+      │                  │  - Extract           │
+Secrets Manager          │  - Transform         │
+                         │  - Partition         │
+                         │  - Load              │
+                         └──────────┬───────────┘
+                                    ↓
+                         ┌─────────────────────┐
+                         │   S3 Data Lake      │
+                         │  (Parquet Files)    │
+                         │  - transactions/    │
+                         │  - dim_trucks/      │
+                         │  - dim_payments/    │
+                         └──────────┬──────────┘
+                                    ↓
+                         ┌─────────────────────┐
+                         │   Glue Crawler      │
+                         │  (Auto-catalog)     │
+                         └──────────┬──────────┘
+                                    ↓
+                         ┌─────────────────────┐
+                         │   Glue Database     │
+                         │  (Table Metadata)   │
+                         └──────────┬──────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    ↓                               ↓
+
+┌──────────────────────────────────┐   ┌──────────────────────────────────┐
+│  REPORTING (Daily 9:30 AM UTC)   │   │      ANALYTICS DASHBOARD         │
+└──────────────────────────────────┘   └──────────────────────────────────┘
+
+EventBridge (Cron)                      Streamlit Dashboard (ECS Service)
+        ↓                                            ↓
+┌─────────────────┐                        ┌─────────────────┐
+│ Step Functions  │                        │     Athena      │
+└────────┬────────┘                        │   (SQL Query)   │
+         ↓                                  └────────┬────────┘
+┌─────────────────┐                                 ↓
+│     Lambda      │                         ┌─────────────────┐
+│ (Read S3 Data)  │◄────────────────────────│  Glue Catalog   │
+└────────┬────────┘                         └─────────────────┘
+         ↓
+┌─────────────────┐
+│  Step Functions │
+│  (Send Email)   │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   SES (Email)   │
+└─────────────────┘
+
+All services log to CloudWatch Logs
+Docker images stored in ECR
 ```
 
 ### Key Components

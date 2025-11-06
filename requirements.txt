@@ -1,0 +1,10 @@
+boto3
+pandas
+pyarrow
+altair
+pymysql
+python-dotenv
+awswrangler
+streamlit
+cryptography
+plotly
